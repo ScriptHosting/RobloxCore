@@ -1,0 +1,281 @@
+local l__HttpRbxApiService__1 = game:GetService("HttpRbxApiService");
+local l__HttpService__2 = game:GetService("HttpService");
+local l__Players__3 = game:GetService("Players");
+local l__StarterGui__4 = game:GetService("StarterGui");
+local l__RobloxReplicatedStorage__5 = game:GetService("RobloxReplicatedStorage");
+local v6 = require(game:GetService("CoreGui"):WaitForChild("RobloxGui").Modules.Common.Url);
+game:DefineFastFlag("EnableMigrateBlockingOffAPIProxy", false);
+game:DefineFastFlag("MigrateGetBlockedUsers2", false);
+local v7 = {};
+v7.__index = v7;
+local v8 = l__Players__3.LocalPlayer;
+while not v8 do
+	l__Players__3.PlayerAdded:wait();
+	v8 = l__Players__3.LocalPlayer;
+end;
+local u1 = nil;
+spawn(function()
+	u1 = l__RobloxReplicatedStorage__5:WaitForChild("UpdatePlayerBlockList", math.huge);
+end);
+local u2 = {};
+local u3 = false;
+local function u4()
+	local v9 = {};
+	for v10, v11 in pairs(u2) do
+		table.insert(v9, v10);
+	end;
+	return v9;
+end;
+local u5 = false;
+local u6 = Instance.new("BindableEvent");
+local function u7()
+	if game:GetFastFlag("MigrateGetBlockedUsers2") and game:GetEngineFeature("EnableHttpRbxApiServiceWhiteListAccountSettings") then
+		local u8 = v6.ACCOUNT_SETTINGS_URL .. "v1/users/get-blocked-users";
+		local u9 = nil;
+		if pcall(function()
+			local v12 = l__HttpRbxApiService__1:GetAsyncFullUrl(u8, Enum.ThrottlingPriority.Default, Enum.HttpRequestType.Players);
+			u9 = v12 and l__HttpService__2:JSONDecode(v12);
+		end) and u9 then
+			local v13 = {};
+			for v14, v15 in pairs(u9.blockedUserIds) do
+				v13[v15] = true;
+			end;
+			return v13;
+		end;
+	else
+		local l__UserId__16 = v8.UserId;
+		local v17 = "userblock/getblockedusers" .. "?" .. "userId=" .. tostring(l__UserId__16) .. "&page=1";
+		if l__UserId__16 > 0 then
+			local u10 = nil;
+			if pcall(function()
+				local v18 = l__HttpRbxApiService__1:GetAsync(v17, Enum.ThrottlingPriority.Default, Enum.HttpRequestType.Players);
+				u10 = v18 and l__HttpService__2:JSONDecode(v18);
+			end) and u10 and u10.success == true and u10.userList then
+				local v19 = {};
+				for v20, v21 in pairs(u10.userList) do
+					v19[v21] = true;
+				end;
+				return v19;
+			end;
+		end;
+	end;
+	return {};
+end;
+local function u11()
+	if not (v8.UserId > 0) then
+		return {};
+	end;
+	local v22 = 0;
+	while true do
+		if u3 then
+			return u4();
+		end;
+		v22 = v22 + wait();
+		if v22 > 5 then
+			break;
+		end;	
+	end;
+	return {};
+end;
+local u12 = {};
+local function u13(p1)
+	if u2[p1] then
+		return true;
+	end;
+	return false;
+end;
+local u14 = Instance.new("BindableEvent");
+local u15 = Instance.new("BindableEvent");
+local function u16(p2)
+	if u12[p2] ~= nil and u12[p2] == true then
+		return true;
+	end;
+	return false;
+end;
+local u17 = Instance.new("BindableEvent");
+local v23 = Instance.new("BindableEvent");
+local v24 = Instance.new("BindableEvent");
+local u18 = Instance.new("BindableEvent");
+local u19 = Instance.new("BindableEvent");
+u14.Event:Connect(function(p3, p4)
+	local v25 = l__Players__3:GetPlayerByUserId(p3);
+	if v25 then
+		if not p4 then
+			u19:Fire(v25);
+			return;
+		end;
+	else
+		return;
+	end;
+	u18:Fire(v25);
+end);
+u17.Event:Connect(function(p5, p6)
+	local v26 = l__Players__3:GetPlayerByUserId(p5);
+	if v26 then
+		if not p6 then
+			v24:Fire(v26);
+			return;
+		end;
+	else
+		return;
+	end;
+	v23:Fire(v26);
+end);
+l__StarterGui__4:RegisterGetCore("PlayerBlockedEvent", function()
+	return u18;
+end);
+l__StarterGui__4:RegisterGetCore("PlayerUnblockedEvent", function()
+	return u19;
+end);
+l__StarterGui__4:RegisterGetCore("PlayerMutedEvent", function()
+	return v23;
+end);
+l__StarterGui__4:RegisterGetCore("PlayerUnmutedEvent", function()
+	return v24;
+end);
+local function u20()
+	if u3 then
+		return;
+	end;
+	if u5 then
+		u6.Event:Wait();
+		return;
+	end;
+	u5 = true;
+	u2 = u7();
+	u3 = true;
+	u6:Fire();
+	l__RobloxReplicatedStorage__5:WaitForChild("SetPlayerBlockList", math.huge):FireServer((u11()));
+end;
+function v7.InitBlockListAsync(p7)
+	u20();
+end;
+local function u21(p8)
+	local v27 = nil;
+	if p8 and v8 ~= p8 then
+		v27 = p8.UserId;
+		if not (v27 > 0) then
+			return false;
+		end;
+	else
+		return false;
+	end;
+	if u13(v27) then
+		return true;
+	end;
+	u2[v27] = true;
+	u14:Fire(v27, true);
+	if u1 then
+		u1:FireServer(v27, true);
+	end;
+	if game:GetFastFlag("EnableMigrateBlockingOffAPIProxy") and game:GetEngineFeature("EnableHttpRbxApiServiceWhiteListAccountSettings") then
+		local v28, v29 = pcall(function()
+			local v30 = l__HttpRbxApiService__1:PostAsyncFullUrl(v6.ACCOUNT_SETTINGS_URL .. "v1/users/" .. tostring(p8.UserId) .. "/block", "");
+			if not v30 then
+				return;
+			end;
+			local v31 = l__HttpService__2:JSONDecode(v30);
+			return v31 and not v31.errors;
+		end);
+		local v32 = v28;
+		local v33 = v29;
+	else
+		local v34, v35 = pcall(function()
+			local v36 = l__HttpRbxApiService__1:PostAsync("userblock/block", "userId=" .. tostring(p8.UserId), Enum.ThrottlingPriority.Default, Enum.HttpContentType.ApplicationUrlEncoded);
+			local v37 = v36 and l__HttpService__2:JSONDecode(v36);
+			return v37 and v37.success;
+		end);
+		v32 = v34;
+		v33 = v35;
+	end;
+	if v32 and v33 then
+		u15:Fire(v27, true);
+	end;
+	return v32 or v33;
+end;
+function v7.BlockPlayerAsync(p9, p10)
+	return u21(p10);
+end;
+local function u22(p11)
+	if not p11 then
+		return false;
+	end;
+	local l__UserId__38 = p11.UserId;
+	if not u13(l__UserId__38) then
+		return true;
+	end;
+	u2[l__UserId__38] = nil;
+	u14:Fire(l__UserId__38, false);
+	if u1 then
+		u1:FireServer(l__UserId__38, false);
+	end;
+	if game:GetFastFlag("EnableMigrateBlockingOffAPIProxy") and game:GetEngineFeature("EnableHttpRbxApiServiceWhiteListAccountSettings") then
+		local v39, v40 = pcall(function()
+			local v41 = l__HttpRbxApiService__1:PostAsyncFullUrl(v6.ACCOUNT_SETTINGS_URL .. "v1/users/" .. tostring(p11.UserId) .. "/unblock", "");
+			if not v41 then
+				return;
+			end;
+			local v42 = l__HttpService__2:JSONDecode(v41);
+			return v42 and not v42.errors;
+		end);
+		local v43 = v39;
+		local v44 = v40;
+	else
+		local v45, v46 = pcall(function()
+			local v47 = l__HttpRbxApiService__1:PostAsync("userblock/unblock", "userId=" .. tostring(p11.UserId), Enum.ThrottlingPriority.Default, Enum.HttpContentType.ApplicationUrlEncoded);
+			local v48 = v47 and l__HttpService__2:JSONDecode(v47);
+			return v48 and v48.success;
+		end);
+		v43 = v45;
+		v44 = v46;
+	end;
+	if v43 and v44 then
+		u15:Fire(l__UserId__38, false);
+	end;
+	return v43 or v44;
+end;
+function v7.UnblockPlayerAsync(p12, p13)
+	return u22(p13);
+end;
+local function u23(p14)
+	if p14 and v8 ~= p14 then
+		local l__UserId__49 = p14.UserId;
+		if l__UserId__49 > 0 and not u16(l__UserId__49) then
+			u12[l__UserId__49] = true;
+			u17:Fire(l__UserId__49, true);
+		end;
+	end;
+end;
+function v7.MutePlayer(p15, p16)
+	return u23(p16);
+end;
+local function u24(p17)
+	if p17 then
+		local l__UserId__50 = p17.UserId;
+		u12[l__UserId__50] = nil;
+		u17:Fire(l__UserId__50, false);
+	end;
+end;
+function v7.UnmutePlayer(p18, p19)
+	return u24(p19);
+end;
+function v7.IsPlayerBlockedByUserId(p20, p21)
+	u20();
+	return u13(p21);
+end;
+function v7.GetBlockedStatusChangedEvent(p22)
+	return u14.Event;
+end;
+function v7.GetAfterBlockedStatusChangedEvent(p23)
+	return u15.Event;
+end;
+function v7.GetMutedStatusChangedEvent(p24)
+	return u17.Event;
+end;
+function v7.IsPlayerMutedByUserId(p25, p26)
+	return u16(p26);
+end;
+function v7.GetBlockedUserIdsAsync(p27)
+	return u11();
+end;
+return v7;
